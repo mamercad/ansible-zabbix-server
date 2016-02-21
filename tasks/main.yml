@@ -1,0 +1,65 @@
+---
+# tasks file for ansible-zabbix-server
+
+- name: install the zabbix repository | {{ inventory_hostname }}
+  yum: name={{ zabbix_repo }} state=present
+  become: yes
+
+- name: install zabbix-server-mysql | {{ inventory_hostname }}
+  yum: name=zabbix-server-mysql state=present
+  become: yes
+
+- name: install mariadb and mariadb-server | {{ inventory_hostname }}
+  yum: name={{ item }}
+  with_items:
+    - mariadb
+    - mariadb-server
+  become: yes
+
+- name: start and enable mariadb | {{ inventory_hostname }}
+  service: name=mariadb state=started enabled=yes
+  become: yes
+
+- name: check if zabbix database already exists | {{ inventory_hostname }}
+  shell: mysql -uroot -e "show databases" | grep zabbix
+  become: yes
+  register: check_database
+  ignore_errors: yes
+  changed_when: no
+
+- name: create zabbix database and user | {{ inventory_hostname }}
+  shell: mysql -uroot -e "create database zabbix character set utf8 collate utf8_bin"
+  become: yes
+  when: check_database.rc != 0
+
+- name: check if privileges need to be granted | {{ inventory_hostname }}
+  shell: mysql -uroot mysql -e "select * from db where host='localhost' and db='zabbix' and user='zabbix'" | grep zabbix
+  become: yes
+  register: check_privileges
+  ignore_errors: yes
+  changed_when: no
+
+- name: grant zabbix database user privileges | {{ inventory_hostname }}
+  shell: mysql -uroot -e "grant all privileges on zabbix.* to zabbix@localhost identified by '{{ zabbix_db_password }}'"
+  become: yes
+  when: check_privileges.rc != 0
+
+- name: check if schema and data need to be loaded | {{ inventory_hostname }}
+  shell: mysql -uroot zabbix -e "show tables" | grep maintenances
+  become: yes
+  register: check_schema
+  ignore_errors: yes
+  changed_when: no
+
+- name: load zabbix schema and data | {{ inventory_hostname }}
+  shell: zcat create.sql.gz | mysql -uroot zabbix chdir=/usr/share/doc/zabbix-server-mysql-3.0.0
+  become: yes
+  when: check_schema.rc != 0
+
+- name: configure password in zabbix_server.conf | {{ inventory_hostname }}
+  replace: dest=/etc/zabbix/zabbix_server.conf regexp='^# DBPassword=$' replace="DBPassword={{ zabbix_db_password }}" backup=yes
+  become: yes
+
+- name: start and enable zabbix-server | {{ inventory_hostname }}
+  service: name=zabbix-server state=started enabled=yes
+  become: yes
