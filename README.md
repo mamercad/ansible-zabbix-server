@@ -1,4 +1,4 @@
-Role Name
+mamercad.zabbix-server
 =========
 
 Stands up Zabbix 3.0.0 (server) with MariaDB on RHEL/CentOS
