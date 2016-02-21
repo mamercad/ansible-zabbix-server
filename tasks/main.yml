@@ -20,6 +20,10 @@
   service: name=mariadb state=started enabled=yes
   become: yes
 
+- name: install zabbix-get | {{ inventory_hostname }}
+  yum: name=zabbix-get state=present
+  become: yes
+
 - name: check if zabbix database already exists | {{ inventory_hostname }}
   shell: mysql -uroot -e "show databases" | grep zabbix
   become: yes
