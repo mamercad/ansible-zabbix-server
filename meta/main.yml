@@ -1,6 +1,6 @@
 galaxy_info:
   author: Mark Mercado
-  description: Stands up Zabbix 3.0.0 (server) with MariaDB on RHEL/CentOS
+  description: Stands up Zabbix 3.0.0 (server) with MariaDB on RHEL/CentOS 7.x
   company: University of Michigan-Flint
 
   # If the issue tracker for your role is not on github, uncomment the

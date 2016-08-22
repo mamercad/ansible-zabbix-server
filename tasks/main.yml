@@ -2,7 +2,7 @@
 # tasks file for ansible-zabbix-server
 
 - name: install the zabbix repository
-  yum: name={{ zabbix_repo }} state=present
+  yum: name={{ zabbix.repo }} state=present
   become: yes
 
 - name: install zabbix-server-mysql
@@ -24,44 +24,34 @@
   yum: name=zabbix-get state=present
   become: yes
 
-- name: check if zabbix database already exists
-  shell: mysql -uroot -e "show databases" | grep zabbix
-  become: yes
-  register: check_database
-  ignore_errors: yes
-  changed_when: no
+- name: install MySQL-python
+  yum:
+    name: MySQL-python
+    state: present
 
-- name: create zabbix database and user
-  shell: mysql -uroot -e "create database zabbix character set utf8 collate utf8_bin"
-  become: yes
-  when: check_database.rc != 0
+- name: create zabbix database
+  mysql_db:
+    name: zabbix
+    encoding: utf8
+    collation: utf8_bin
+    state: present
 
-- name: check if privileges need to be granted
-  shell: mysql -uroot mysql -e "select * from db where host='localhost' and db='zabbix' and user='zabbix'" | grep zabbix
-  become: yes
-  register: check_privileges
-  ignore_errors: yes
-  changed_when: no
+- name: create zabbix database user
+  mysql_user:
+    name: zabbix
+    password: password
+    priv: zabbix.*:ALL
+    state: present
 
-- name: grant zabbix database user privileges
-  shell: mysql -uroot -e "grant all privileges on zabbix.* to zabbix@localhost identified by '{{ zabbix_db_password }}'"
-  become: yes
-  when: check_privileges.rc != 0
-
-- name: check if schema and data need to be loaded
-  shell: mysql -uroot zabbix -e "show tables" | grep maintenances
-  become: yes
-  register: check_schema
-  ignore_errors: yes
-  changed_when: no
-
-- name: load zabbix schema and data
-  shell: zcat create.sql.gz | mysql -uroot zabbix chdir=/usr/share/doc/zabbix-server-mysql-3.0.0
-  become: yes
-  when: check_schema.rc != 0
+- name: import zabbix database schema
+  mysql_db:
+    name: zabbix
+    target: /usr/share/doc/zabbix-server-mysql-{{ zabbix.version }}/create.sql.gz
+    state: import
+  ignore_errors: yes # not really nicely idempotent (bombs with 'broken pipe' if already imported)
 
 - name: configure password in zabbix_server.conf
-  replace: dest=/etc/zabbix/zabbix_server.conf regexp='^# DBPassword=$' replace="DBPassword={{ zabbix_db_password }}" backup=yes
+  replace: dest=/etc/zabbix/zabbix_server.conf regexp='^# DBPassword=$' replace="DBPassword={{ zabbix.database.password }}" backup=yes
   become: yes
 
 - name: start and enable zabbix-server

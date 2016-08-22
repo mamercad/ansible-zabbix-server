@@ -1,17 +1,17 @@
 mamercad.zabbix-server
-=========
+======================
 
-Stands up Zabbix 3.0.0 (server) with MariaDB on RHEL/CentOS
+Stands up Zabbix 3.0.0 (server) with MariaDB on RHEL/CentOS 7.x
 
 Requirements
 ------------
 
-None
+- Fedora EPEL (for MySQL-python)
 
 Role Variables
 --------------
 
-The password for the zabbix database user can be set in vars/main.yml
+The password for the Zabbix database user can be set in vars/main.yml
 
 Dependencies
 ------------
@@ -21,9 +21,11 @@ None
 Example Playbook
 ----------------
 
-    - hosts: zabbix-server
-      roles:
-         - mamercad.zabbix-server
+```yaml
+- hosts: zabbix
+  roles:
+    - mamercad.zabbix-server
+```
 
 License
 -------
@@ -34,4 +36,3 @@ Author Information
 ------------------
 
 Mark Mercado <mamercad@umflint.edu>
-
