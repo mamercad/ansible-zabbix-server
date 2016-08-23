@@ -39,7 +39,7 @@
 - name: create zabbix database user
   mysql_user:
     name: zabbix
-    password: password
+    password: "{{ zabbix.database.password }}"
     priv: zabbix.*:ALL
     state: present
 
